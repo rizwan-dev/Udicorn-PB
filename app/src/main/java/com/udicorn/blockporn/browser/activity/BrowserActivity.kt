@@ -1298,7 +1298,7 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
             return
         }
 
-        val searchUrl = "$searchText${UrlUtils.QUERY_PLACE_HOLDER}".removeSuffix("/").removeSuffix(safeSearch) + safeSearch
+        val searchUrl = "$searchText${UrlUtils.QUERY_PLACE_HOLDER}"
         if (currentTab != null) {
             currentTab.stopLoading()
             presenter?.loadUrlInCurrentView(UrlUtils.smartUrlFilter(query.trim() + safeSearch, true, searchUrl))

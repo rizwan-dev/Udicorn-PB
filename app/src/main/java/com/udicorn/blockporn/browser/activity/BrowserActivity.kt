@@ -103,6 +103,7 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
     private var searchBackground: View? = null
     private var searchView: SearchView? = null
     private var arrowImageView: ImageView? = null
+    private val safeSearch = "&safe=active"
 
     // Current tab view being displayed
     private var currentTabView: View? = null
@@ -138,13 +139,21 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
     private var cameraPhotoPath: String? = null
 
     // The singleton BookmarkManager
-    @Inject internal lateinit var bookmarkManager: BookmarkRepository
-    @Inject internal lateinit var historyModel: HistoryRepository
-    @Inject internal lateinit var bookmarksDialogBuilder: LightningDialogBuilder
-    @Inject internal lateinit var searchBoxModel: SearchBoxModel
-    @Inject internal lateinit var searchEngineProvider: SearchEngineProvider
-    @Inject internal lateinit var networkConnectivityModel: NetworkConnectivityModel
-    @Inject @field:Named("database") internal lateinit var databaseScheduler: Scheduler
+    @Inject
+    internal lateinit var bookmarkManager: BookmarkRepository
+    @Inject
+    internal lateinit var historyModel: HistoryRepository
+    @Inject
+    internal lateinit var bookmarksDialogBuilder: LightningDialogBuilder
+    @Inject
+    internal lateinit var searchBoxModel: SearchBoxModel
+    @Inject
+    internal lateinit var searchEngineProvider: SearchEngineProvider
+    @Inject
+    internal lateinit var networkConnectivityModel: NetworkConnectivityModel
+    @Inject
+    @field:Named("database")
+    internal lateinit var databaseScheduler: Scheduler
 
     private val tabsManager: TabsManager = TabsManager()
 
@@ -173,7 +182,8 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
     }
 
     // Proxy
-    @Inject internal lateinit var proxyUtils: ProxyUtils
+    @Inject
+    internal lateinit var proxyUtils: ProxyUtils
 
     /**
      * Determines if the current browser instance is in incognito mode or not.
@@ -497,7 +507,8 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
             val currentView = tabsManager.currentTab
             if (!hasFocus && currentView != null) {
                 setIsLoading(currentView.progress < 100)
-                updateUrl(currentView.url, false)
+                val urlToPass = currentView.url.removeSuffix("/")
+                updateUrl(urlToPass + safeSearch, false)
             } else if (hasFocus && currentView != null) {
 
                 // Hack to make sure the text gets selected
@@ -516,7 +527,9 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
 
         override fun onPreFocus() {
             val currentView = tabsManager.currentTab ?: return
-            val url = currentView.url
+            val urlToPass = currentView.url.removeSuffix("/")
+
+            val url = urlToPass + safeSearch
             if (!UrlUtils.isSpecialUrl(url)) {
                 if (searchView?.hasFocus() == false) {
                     searchView?.setText(url)
@@ -761,7 +774,8 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
             }
             R.id.action_add_to_homescreen -> {
                 if (currentView != null) {
-                    Utils.createShortcut(this, HistoryItem(currentView.url, currentView.title).apply {
+                    val urlToPass = currentView.url.removeSuffix("/")
+                    Utils.createShortcut(this, HistoryItem(urlToPass + safeSearch, currentView.title).apply {
                         bitmap = currentView.favicon
                     })
                 }
@@ -1283,10 +1297,11 @@ abstract class BrowserActivity : ThemableBrowserActivity(), BrowserView, UIContr
         if (query.isEmpty()) {
             return
         }
-        val searchUrl = "$searchText${UrlUtils.QUERY_PLACE_HOLDER}"
+
+        val searchUrl = "$searchText${UrlUtils.QUERY_PLACE_HOLDER}".removeSuffix("/").removeSuffix(safeSearch) + safeSearch
         if (currentTab != null) {
             currentTab.stopLoading()
-            presenter?.loadUrlInCurrentView(UrlUtils.smartUrlFilter(query.trim(), true, searchUrl))
+            presenter?.loadUrlInCurrentView(UrlUtils.smartUrlFilter(query.trim() + safeSearch, true, searchUrl))
         }
     }
 
